@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import "./App.css";
 
@@ -23,7 +24,15 @@ const initialProducts = [
 
 const money = (price) => "₹" + Number(price).toLocaleString("en-IN");
 
-// NAVBAR
+const colors = [
+  { name: "Beige", value: "#D8C3A5" },
+  { name: "Brown", value: "#795548" },
+  { name: "Black", value: "#222222" },
+  { name: "White", value: "#FFFFFF" },
+  { name: "Rose", value: "#D98C9C" },
+  { name: "Green", value: "#739477" }
+];
+
 function Navbar({ count, onCart, search, setSearch }) {
   const handleSearch = (e) => {
     e.preventDefault();
@@ -54,16 +63,10 @@ function Navbar({ count, onCart, search, setSearch }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-
           {search !== "" && (
-            <button type="button" onClick={() => setSearch("")}>
-              ✕
-            </button>
+            <button type="button" onClick={() => setSearch("")}>✕</button>
           )}
-
-          <button type="submit" className="search-submit">
-            Search
-          </button>
+          <button type="submit" className="search-submit">Search</button>
         </form>
 
         <button type="button" className="cart-button" onClick={onCart}>
@@ -74,28 +77,17 @@ function Navbar({ count, onCart, search, setSearch }) {
   );
 }
 
-// HERO
 function Hero() {
   return (
     <section className="hero" id="home">
       <div className="hero-content">
         <span className="hero-tag">✦ A LITTLE JOY IN EVERY ORDER</span>
-
-        <h1>
-          Find your next
-          <br />
-          <span>favorite thing.</span>
-        </h1>
-
+        <h1>Find your next<br /><span>favorite thing.</span></h1>
         <p>
           Thoughtfully picked essentials for your everyday life.
           Discover things you love, all in one place.
         </p>
-
-        <a href="#products" className="hero-btn">
-          Explore collection →
-        </a>
-
+        <a href="#products" className="hero-btn">Explore collection →</a>
         <div className="hero-note">✦ 17 curated products and counting</div>
       </div>
 
@@ -109,7 +101,6 @@ function Hero() {
   );
 }
 
-// CATEGORY FILTER
 function CategoryFilter({ category, setCategory }) {
   const categories = ["All", "Fashion", "Accessories", "Electronics", "Home"];
 
@@ -129,9 +120,36 @@ function CategoryFilter({ category, setCategory }) {
   );
 }
 
-// PRODUCT CARD
 function ProductCard({ product, onAdd, wishlist, onWishlist }) {
   const isLiked = wishlist.includes(product.id);
+  const [selectedColor, setSelectedColor] = useState("Beige");
+  const [selectedSize, setSelectedSize] = useState("");
+
+  const productName = product.name.toLowerCase();
+  const isShoes = productName.includes("shoe") || productName.includes("sneaker");
+  const isShirt = productName.includes("shirt") || productName.includes("t-shirt");
+
+  const sizes = isShoes
+    ? ["6", "7", "8", "9", "10"]
+    : isShirt
+    ? ["S", "M", "L", "XL"]
+    : ["S", "M", "L", "XL"];
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      alert("Please select a size first!");
+      return;
+    }
+
+    const cartKey = `${product.id}-${selectedColor}-${selectedSize}`;
+
+    onAdd({
+      ...product,
+      selectedColor,
+      selectedSize,
+      cartKey
+    });
+  };
 
   return (
     <article className="product-card">
@@ -168,11 +186,40 @@ function ProductCard({ product, onAdd, wishlist, onWishlist }) {
           <del>{money(product.oldPrice)}</del>
         </div>
 
-        <button
-          type="button"
-          className="add-button"
-          onClick={() => onAdd(product)}
-        >
+        <div className="variant-section">
+          <p className="variant-label">Color: <strong>{selectedColor}</strong></p>
+          <div className="color-options">
+            {colors.map((color) => (
+              <button
+                key={color.name}
+                type="button"
+                className={`color-swatch ${selectedColor === color.name ? "selected" : ""}`}
+                style={{ backgroundColor: color.value }}
+                title={color.name}
+                aria-label={`Select ${color.name}`}
+                onClick={() => setSelectedColor(color.name)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="variant-section">
+          <p className="variant-label">Size: <strong>{selectedSize || "Select size"}</strong></p>
+          <div className="size-options">
+            {sizes.map((size) => (
+              <button
+                key={size}
+                type="button"
+                className={`size-button ${selectedSize === size ? "selected" : ""}`}
+                onClick={() => setSelectedSize(size)}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button type="button" className="add-button" onClick={handleAddToCart}>
           + Add to cart
         </button>
       </div>
@@ -180,7 +227,6 @@ function ProductCard({ product, onAdd, wishlist, onWishlist }) {
   );
 }
 
-// PRODUCT GRID
 function ProductGrid({ products, onAdd, wishlist, onWishlist }) {
   return (
     <div className="product-grid">
@@ -197,7 +243,6 @@ function ProductGrid({ products, onAdd, wishlist, onWishlist }) {
   );
 }
 
-// QUANTITY
 function QuantityController({ quantity, update }) {
   return (
     <div className="quantity-control">
@@ -208,7 +253,6 @@ function QuantityController({ quantity, update }) {
   );
 }
 
-// CART ITEM
 function CartItem({ item, updateQty, remove }) {
   return (
     <div className="cart-item">
@@ -224,17 +268,18 @@ function CartItem({ item, updateQty, remove }) {
       <div className="cart-item-details">
         <h4>{item.name}</h4>
         <span>{money(item.price)}</span>
-
+        <p className="cart-variant">Color: {item.selectedColor}</p>
+        <p className="cart-variant">Size: {item.selectedSize}</p>
         <QuantityController
           quantity={item.quantity}
-          update={(value) => updateQty(item.id, value)}
+          update={(value) => updateQty(item.cartKey, value)}
         />
       </div>
 
       <button
         type="button"
         className="remove-btn"
-        onClick={() => remove(item.id)}
+        onClick={() => remove(item.cartKey)}
         title="Remove product"
       >
         🗑
@@ -243,7 +288,6 @@ function CartItem({ item, updateQty, remove }) {
   );
 }
 
-// CART SUMMARY
 function CartSummary({ subtotal, close }) {
   return (
     <div className="cart-summary">
@@ -251,25 +295,18 @@ function CartSummary({ subtotal, close }) {
         <span>Subtotal</span>
         <strong>{money(subtotal)}</strong>
       </div>
-
       <div className="summary-line shipping">
         <span>Shipping</span>
         <span>Free</span>
       </div>
-
       <div className="summary-line total">
         <span>Total</span>
         <strong>{money(subtotal)}</strong>
       </div>
 
-      <button
-        type="button"
-        className="checkout-btn"
-        onClick={() => alert("Demo checkout only")}
-      >
+      <button type="button" className="checkout-btn" onClick={() => alert("Demo checkout only")}>
         Proceed to checkout →
       </button>
-
       <button type="button" className="continue-btn" onClick={close}>
         Continue shopping
       </button>
@@ -277,17 +314,9 @@ function CartSummary({ subtotal, close }) {
   );
 }
 
-// CART DRAWER
 function CartDrawer({ cart, close, updateQty, remove }) {
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  const totalItems = cart.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="drawer-overlay" onClick={close}>
@@ -297,10 +326,7 @@ function CartDrawer({ cart, close, updateQty, remove }) {
             <h2>Your Shopping Bag</h2>
             <p>{totalItems} items selected</p>
           </div>
-
-          <button type="button" className="icon-btn" onClick={close}>
-            ✕
-          </button>
+          <button type="button" className="icon-btn" onClick={close}>✕</button>
         </div>
 
         {cart.length === 0 ? (
@@ -308,23 +334,20 @@ function CartDrawer({ cart, close, updateQty, remove }) {
             <div style={{ fontSize: "45px" }}>🛒</div>
             <h3>Your cart is empty</h3>
             <p>Find something you'll love.</p>
-            <button type="button" onClick={close}>
-              Continue Shopping
-            </button>
+            <button type="button" onClick={close}>Continue Shopping</button>
           </div>
         ) : (
           <>
             <div className="cart-items">
               {cart.map((item) => (
                 <CartItem
-                  key={item.id}
+                  key={item.cartKey}
                   item={item}
                   updateQty={updateQty}
                   remove={remove}
                 />
               ))}
             </div>
-
             <CartSummary subtotal={subtotal} close={close} />
           </>
         )}
@@ -333,7 +356,6 @@ function CartDrawer({ cart, close, updateQty, remove }) {
   );
 }
 
-// THEME SWITCHER
 function ThemeSwitcher({ theme, setTheme }) {
   const themes = [
     { id: "cream", color: "#F6F1E9", name: "Cream" },
@@ -361,7 +383,6 @@ function ThemeSwitcher({ theme, setTheme }) {
   );
 }
 
-// FOOTER
 function Footer() {
   return (
     <footer className="footer" id="about">
@@ -369,19 +390,16 @@ function Footer() {
         <div className="logo">🛍 global<span>cart.</span></div>
         <p>Little finds. Big happiness.</p>
       </div>
-
       <div className="footer-links">
         <a href="#home">Home</a>
         <a href="#products">Shop</a>
         <a href="#about">About</a>
       </div>
-
       <p className="copyright">© 2026 Global Cart. Made with care.</p>
     </footer>
   );
 }
 
-// MAIN APP
 export default function App() {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -398,14 +416,13 @@ export default function App() {
     image: ""
   });
 
-  // ADD TO CART
   const addToCart = (product) => {
     setCart((previousCart) => {
-      const existing = previousCart.find((item) => item.id === product.id);
+      const existing = previousCart.find((item) => item.cartKey === product.cartKey);
 
       if (existing) {
         return previousCart.map((item) =>
-          item.id === product.id
+          item.cartKey === product.cartKey
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -417,26 +434,23 @@ export default function App() {
     setCartOpen(true);
   };
 
-  // UPDATE QUANTITY
-  const updateQty = (id, quantity) => {
+  const updateQty = (cartKey, quantity) => {
     if (quantity < 1) {
-      setCart((previous) => previous.filter((item) => item.id !== id));
+      setCart((previous) => previous.filter((item) => item.cartKey !== cartKey));
       return;
     }
 
     setCart((previous) =>
-      previous.map((item =>
-        item.id === id ? { ...item, quantity } : item
-      ))
+      previous.map((item) =>
+        item.cartKey === cartKey ? { ...item, quantity } : item
+      )
     );
   };
 
-  // REMOVE FROM CART
-  const removeItem = (id) => {
-    setCart((previous) => previous.filter((item) => item.id !== id));
+  const removeItem = (cartKey) => {
+    setCart((previous) => previous.filter((item) => item.cartKey !== cartKey));
   };
 
-  // WISHLIST
   const toggleWishlist = (id) => {
     setWishlist((previous) =>
       previous.includes(id)
@@ -445,7 +459,6 @@ export default function App() {
     );
   };
 
-  // ADD CUSTOM PRODUCT
   const handleAddProduct = (e) => {
     e.preventDefault();
 
@@ -484,25 +497,15 @@ export default function App() {
     alert("Product added successfully!");
   };
 
-  // ALL PRODUCTS
   const allProducts = [...initialProducts, ...customProducts];
 
-  // SEARCH + CATEGORY FILTER
   const filteredProducts = allProducts.filter((product) => {
-    const categoryMatch =
-      category === "All" || product.category === category;
-
-    const searchMatch =
-      product.name.toLowerCase().includes(search.trim().toLowerCase());
-
+    const categoryMatch = category === "All" || product.category === category;
+    const searchMatch = product.name.toLowerCase().includes(search.trim().toLowerCase());
     return categoryMatch && searchMatch;
   });
 
-  // CART COUNT
-  const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <div className={`app theme-${theme}`}>
@@ -519,7 +522,6 @@ export default function App() {
 
       <Hero />
 
-      {/* CUSTOM PRODUCT SECTION */}
       <section className="custom-product-section">
         <div className="custom-product-heading">
           <span className="eyebrow">YOUR OWN COLLECTION</span>
@@ -532,16 +534,12 @@ export default function App() {
             type="text"
             placeholder="Product name"
             value={newProduct.name}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, name: e.target.value })
-            }
+            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
           />
 
           <select
             value={newProduct.category}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, category: e.target.value })
-            }
+            onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
           >
             <option>Fashion</option>
             <option>Accessories</option>
@@ -554,27 +552,20 @@ export default function App() {
             min="1"
             placeholder="Price ₹"
             value={newProduct.price}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, price: e.target.value })
-            }
+            onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
           />
 
           <input
             type="url"
             placeholder="Product image URL"
             value={newProduct.image}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, image: e.target.value })
-            }
+            onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
           />
 
-          <button type="submit" className="custom-add-btn">
-            + Add Product
-          </button>
+          <button type="submit" className="custom-add-btn">+ Add Product</button>
         </form>
       </section>
 
-      {/* SHOP */}
       <main className="shop-section" id="products">
         <div className="shop-heading">
           <div>
@@ -582,7 +573,6 @@ export default function App() {
             <h2>Things you'll love.</h2>
             <p>Little things that make everyday special.</p>
           </div>
-
           <ThemeSwitcher theme={theme} setTheme={setTheme} />
         </div>
 
@@ -599,15 +589,12 @@ export default function App() {
             onWishlist={toggleWishlist}
           />
         ) : (
-          <div className="no-products">
-            No products found. Try another search.
-          </div>
+          <div className="no-products">No products found. Try another search.</div>
         )}
       </main>
 
       <Footer />
 
-      {/* CART DRAWER */}
       {cartOpen && (
         <CartDrawer
           cart={cart}
